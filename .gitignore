@@ -1,0 +1,15 @@
+# Ignore environment secrets
+.env
+
+# Ignore virtual env
+venv/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore generated files
+document_chunks.json
+temp.pdf
+sample.*
+test_*.py
