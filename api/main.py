@@ -1,4 +1,9 @@
+import sys
 import os
+
+# Add project root to sys.path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import ollama
 from fastapi import FastAPI, Request, HTTPException
@@ -13,12 +18,10 @@ DEFAULT_POLICY_URL = os.getenv("DEFAULT_POLICY_URL")
 
 app = FastAPI(title="HackRx API", version="1.0")
 
-# ✅ Root endpoint for Railway check
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HackRx API is running on Railway"}
 
-# ✅ Healthcheck endpoint for Railway
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -29,7 +32,6 @@ class HackRxRequest(BaseModel):
 
 @app.on_event("startup")
 def preload_default():
-    """Preload a default policy document if DEFAULT_POLICY_URL is set."""
     if DEFAULT_POLICY_URL:
         pdf_path = "default.pdf"
         try:
@@ -44,12 +46,9 @@ def preload_default():
 
 @app.post("/hackrx/run")
 async def hackrx_run(req: Request, payload: HackRxRequest):
-    """Process policy documents and answer questions."""
-    # Authentication
     if req.headers.get("Authorization") != f"Bearer {TEAM_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Process each document
     for doc_url in payload.documents:
         pdf_path = "temp.pdf"
         r = requests.get(doc_url)
@@ -59,7 +58,6 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
             f.write(r.content)
         chunk_document(pdf_path, namespace=doc_url)
 
-    # Answer each question
     answers = []
     for q in payload.questions:
         top_chunks = []
@@ -90,8 +88,7 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
 
     return {"answers": answers}
 
-# ✅ Fixed Uvicorn entry point (no $PORT error)
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))  # Read Railway's PORT as int
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run("api.main:app", host="0.0.0.0", port=port)

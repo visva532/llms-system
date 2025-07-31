@@ -1,4 +1,0 @@
-from loader.pdf_loader import extract_text_from_pdf
-from loader.docx_loader import extract_text_from_docx
-from loader.email_loader import extract_text_from_email
-from loader.chunker import chunk_text
