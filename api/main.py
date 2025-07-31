@@ -18,25 +18,22 @@ DEFAULT_POLICY_URL = os.getenv("DEFAULT_POLICY_URL")
 
 app = FastAPI(title="HackRx API", version="1.0")
 
-
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HackRx API is running on Render"}
 
-
+# Health check endpoints for Render
 @app.get("/health")
+@app.get("/healthz")
 def health():
     return {"status": "ok"}
-
 
 class HackRxRequest(BaseModel):
     documents: list[str]
     questions: list[str]
 
-
 @app.on_event("startup")
 def preload_default():
-    """Load default policy document into chunks at startup."""
     if DEFAULT_POLICY_URL:
         pdf_path = "default.pdf"
         try:
@@ -49,14 +46,12 @@ def preload_default():
         except Exception as e:
             print(f"⚠ Failed to preload default policy: {e}")
 
-
 @app.post("/hackrx/run")
 async def hackrx_run(req: Request, payload: HackRxRequest):
-    """Main endpoint to process policy documents and answer questions."""
     if req.headers.get("Authorization") != f"Bearer {TEAM_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Process documents and store in Pinecone
+    # Process all documents
     for doc_url in payload.documents:
         pdf_path = "temp.pdf"
         r = requests.get(doc_url)
@@ -66,7 +61,7 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
             f.write(r.content)
         chunk_document(pdf_path, namespace=doc_url)
 
-    # Generate answers for each question
+    # Answer questions
     answers = []
     for q in payload.questions:
         top_chunks = []
@@ -97,9 +92,7 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
 
     return {"answers": answers}
 
-
-# Ensure correct host/port binding for Render
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("api.main:app", host="0.0.0.0", port=port, reload=False)
+    port = int(os.environ.get("PORT", 8000))  # Use Render's assigned port
+    uvicorn.run("api.main:app", host="0.0.0.0", port=port)
