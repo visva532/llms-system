@@ -13,10 +13,15 @@ DEFAULT_POLICY_URL = os.getenv("DEFAULT_POLICY_URL")
 
 app = FastAPI(title="HackRx API", version="1.0")
 
-# Root test endpoint for Railway health check
+# ✅ Root endpoint (for Railway test)
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HackRx API is running on Railway"}
+
+# ✅ Health check endpoint
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 class HackRxRequest(BaseModel):
     documents: list[str]
@@ -84,7 +89,8 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
 
     return {"answers": answers}
 
-# ✅ Add Uvicorn entry point for Railway
+# ✅ Uvicorn entry point for Railway
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api.main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    port = int(os.environ.get("PORT", 8000))  # Ensure PORT is integer
+    uvicorn.run("api.main:app", host="0.0.0.0", port=port)

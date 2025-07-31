@@ -1,25 +1,25 @@
-FROM python:3.11-slim
+# Use official lightweight Python image
+FROM python:3.10-slim
+
+# Set environment vars
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set working directory
 WORKDIR /app
 
-# Install OS-level dependencies for some Python packages
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    poppler-utils \
-    libgl1 \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update && apt-get install -y build-essential curl && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python packages
+# Install pip dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the code
+# Copy project files
 COPY . .
 
-# Expose the port Railway will use
+# Expose port
 EXPOSE 8000
 
-# Start the app
+# Start app
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
