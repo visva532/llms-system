@@ -24,4 +24,5 @@ COPY . .
 EXPOSE 8000
 
 # Use shell form so $PORT is read at container runtime
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port $PORT"]
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
