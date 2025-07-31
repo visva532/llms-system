@@ -13,12 +13,12 @@ DEFAULT_POLICY_URL = os.getenv("DEFAULT_POLICY_URL")
 
 app = FastAPI(title="HackRx API", version="1.0")
 
-# ✅ Root endpoint for Railway healthcheck
+# ✅ Root endpoint for Railway check
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HackRx API is running on Railway"}
 
-# ✅ Dedicated healthcheck endpoint
+# ✅ Healthcheck endpoint for Railway
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -49,7 +49,7 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
     if req.headers.get("Authorization") != f"Bearer {TEAM_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Process documents
+    # Process each document
     for doc_url in payload.documents:
         pdf_path = "temp.pdf"
         r = requests.get(doc_url)
@@ -59,7 +59,7 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
             f.write(r.content)
         chunk_document(pdf_path, namespace=doc_url)
 
-    # Answer questions
+    # Answer each question
     answers = []
     for q in payload.questions:
         top_chunks = []
@@ -90,11 +90,8 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
 
     return {"answers": answers}
 
-# ✅ Proper Railway entry point
+# ✅ Fixed Uvicorn entry point (no $PORT error)
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "api.main:app",
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000))  # ✅ Fixed $PORT issue
-    )
+    port = int(os.environ.get("PORT", 8000))  # Read Railway's PORT as int
+    uvicorn.run("api.main:app", host="0.0.0.0", port=port)
