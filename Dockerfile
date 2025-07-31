@@ -20,8 +20,8 @@ RUN pip install --no-cache-dir "numpy<2" \
 # Copy project files
 COPY . .
 
-# Expose port
+# Expose default port (Render will override with $PORT)
 EXPOSE 8000
 
-# Start app — Render sets $PORT automatically
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use shell form so $PORT is read at container runtime
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port $PORT"]

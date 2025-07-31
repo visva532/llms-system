@@ -6,7 +6,9 @@ from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from urllib.parse import quote_plus
 
-# Add project root to sys.path for imports
+# =========================
+# Path setup for imports
+# =========================
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from loader.chunker import chunk_document
@@ -22,18 +24,27 @@ DEFAULT_POLICY_URL = os.getenv("DEFAULT_POLICY_URL")
 # =========================
 # FastAPI app
 # =========================
-app = FastAPI(title="HackRx API", version="1.0")
+app = FastAPI(
+    title="HackRx API",
+    version="1.0",
+    description="LLM-powered Intelligent Query–Retrieval System for HackRx 6.0"
+)
 
+# =========================
+# Health check & root
+# =========================
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HackRx API is running on Render"}
 
-# Health check endpoints for Render
 @app.get("/health")
 @app.get("/healthz")
 def health():
     return {"status": "ok"}
 
+# =========================
+# Request Model
+# =========================
 class HackRxRequest(BaseModel):
     documents: list[str]
     questions: list[str]
@@ -61,23 +72,27 @@ def preload_default():
 # =========================
 @app.post("/hackrx/run")
 async def hackrx_run(req: Request, payload: HackRxRequest):
+    # Authorization
     if req.headers.get("Authorization") != f"Bearer {TEAM_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Process all provided documents
     for doc_url in payload.documents:
         pdf_path = "temp.pdf"
-        r = requests.get(doc_url, timeout=60)
-        if r.status_code != 200:
-            raise HTTPException(status_code=400, detail=f"Failed to download: {doc_url}")
+        try:
+            r = requests.get(doc_url, timeout=60)
+            r.raise_for_status()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to download {doc_url}: {e}")
+
         with open(pdf_path, "wb") as f:
             f.write(r.content)
 
-        # Use a safe namespace for Pinecone
+        # Safe namespace for Pinecone
         safe_namespace = quote_plus(doc_url)
         chunk_document(pdf_path, namespace=safe_namespace)
 
-    # Answer each question
+    # Answer questions
     answers = []
     for q in payload.questions:
         top_chunks = []
@@ -85,14 +100,18 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
             safe_namespace = quote_plus(doc_url)
             top_chunks.extend(query_chunks(q, top_k=3, namespace=safe_namespace))
 
+        # Create context
         context = "\n".join([m["metadata"]["text"] for m in top_chunks])
 
+        # Create prompt
         prompt = (
-            f"Answer based only on the policy document. "
-            f"Include exact sentence + page number.\n\n{context}\n\n"
+            "Answer based only on the policy document. "
+            "Include exact sentence + page number.\n\n"
+            f"{context}\n\n"
             f"Question: {q}\nAnswer:"
         )
 
+        # Generate answer
         try:
             response = ollama.chat(
                 model=OLLAMA_MODEL,
