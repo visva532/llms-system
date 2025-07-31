@@ -13,3 +13,4 @@ document_chunks.json
 temp.pdf
 sample.*
 test_*.py
+.vercel

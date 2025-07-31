@@ -23,7 +23,10 @@ sentence-transformers==2.2.2
 huggingface_hub==0.16.4
 scikit-learn==1.3.2
 
-# CPU-only PyTorch
+# CPU-only PyTorch (for serverless deployment)
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.2.0+cpu
 torchvision==0.17.0+cpu
---extra-index-url https://download.pytorch.org/whl/cpu
+
+# Adapter for Vercel serverless
+mangum==0.17.0
