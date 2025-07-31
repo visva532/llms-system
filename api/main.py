@@ -13,7 +13,7 @@ DEFAULT_POLICY_URL = os.getenv("DEFAULT_POLICY_URL")
 
 app = FastAPI(title="HackRx API", version="1.0")
 
-# ✅ Root endpoint (for Railway check)
+# ✅ Root endpoint for Railway healthcheck
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HackRx API is running on Railway"}
@@ -73,6 +73,7 @@ async def hackrx_run(req: Request, payload: HackRxRequest):
             f"Include exact sentence + page number.\n\n{context}\n\n"
             f"Question: {q}\nAnswer:"
         )
+
         response = ollama.chat(
             model=OLLAMA_MODEL,
             messages=[
